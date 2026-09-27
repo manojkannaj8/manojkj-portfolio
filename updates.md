@@ -44,7 +44,9 @@ _Last updated: 2026-09-27 — Stage 5 (Chapter 04 · Evolve + contact) built fro
 - **Fonts (self-hosted via @fontsource):** `Michroma` (HUD labels), `Unbounded Variable` (wordmark + voxel titles), `Manrope Variable` (body + headlines).
 - **Python tooling (dev only, not deployed):** `torch` + `transformers` (Depth-Anything-V2-Small, ~100 MB HF download, cached), `numpy`, `Pillow`.
 - Bundle after stage 5: ~154 KB gzipped JS, ~18 KB gzipped CSS. Hero assets are ≈ 194 KB plate + 45 KB depth. Evolve images total ≈ 410 KB WebP and are **lazy-loaded** (only when within 800px of the viewport).
-- `.claude/launch.json` defines the `portfolio` dev server for the Claude browser pane.
+- `.claude/launch.json` defines the `portfolio` dev server for the Claude browser pane (git-ignored).
+- **Repo:** https://github.com/manojkannaj8/manojkj-portfolio (branch `main`). **Deploy:** Vercel → Import that repo; the Vite preset is auto-detected (build `npm run build`, output `dist`), and no `vercel.json` is needed (single page, hash anchors only).
+- **Git-ignored on purpose:** `art/achievements/` (the original SurgeGuard screenshots contain private browser tabs/URLs; only the cropped copies in `public/` are committed), plus `.claude/`, `node_modules`, `dist`.
 
 ## 4. Folder structure
 
@@ -531,4 +533,9 @@ Render pipeline per frame (`HeroScene.ts`):
   - The "Implementation" label was truncated → wider label column.
   - Invalid `<span>` inside `<dl>` → wrapped properly.
 - **Verified:** 1280×720 and 375×812, reduced motion, no console errors on a full scroll. Build, type-check and lint pass (2 known warnings).
+
+### 2026-09-27 — Production check + GitHub
+- Production build served with `vite preview` and loaded: all 5 sections render, WebGL hero active, no console errors on a full scroll, dev helpers (`window.__hero`) stripped. `dist` is 1.6 MB.
+- Initialised git and pushed to https://github.com/manojkannaj8/manojkj-portfolio (`main`). Private screenshot originals are excluded.
+- Still recommended before calling it final (Stage 6): a mobile menu + nav backdrop, OG/share meta image, Lighthouse pass, real-device test.
 
