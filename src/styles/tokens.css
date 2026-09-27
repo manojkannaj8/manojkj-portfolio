@@ -1,0 +1,27 @@
+/* Design tokens — pulled from the hero artwork: graphite night, steel armour, visor-blue light. */
+:root {
+  color-scheme: dark;
+
+  --bg: #06080c;
+  --bg-raised: #0c1118;
+  --glass: rgba(16, 22, 32, 0.52);
+  --glass-strong: rgba(10, 14, 21, 0.78);
+  --line: rgba(176, 196, 226, 0.16);
+  --line-strong: rgba(176, 196, 226, 0.32);
+
+  --ink: #eaf0f8;        /* 17.6:1 on --bg */
+  --ink-2: #b3bfcf;      /* 10.9:1 */
+  --ink-3: #8592a5;      /*  6.2:1 — smallest text never goes below this */
+
+  --accent: #8fb5ff;     /* visor strip light */
+  --accent-deep: #4a7dff;
+  --accent-glow: rgba(110, 150, 255, 0.45);
+
+  --f-display: 'Unbounded Variable', 'Arial Black', sans-serif;
+  --f-hud: 'Michroma', 'Eurostile', 'Segoe UI', sans-serif;
+  --f-body: 'Manrope Variable', 'Segoe UI', system-ui, sans-serif;
+
+  --gutter: clamp(16px, 3.4vw, 56px);
+  --radius: 18px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

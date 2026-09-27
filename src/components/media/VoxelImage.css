@@ -1,0 +1,9 @@
+.voxel-image {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle, rgba(176, 196, 226, 0.08) 1px, transparent 1.2px) 0 0 / 16px 16px,
+    #070a10;
+  touch-action: pan-y;
+}
+.voxel-image canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

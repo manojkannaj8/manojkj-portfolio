@@ -1,0 +1,15 @@
+.chapter-head { position: relative; z-index: 40; pointer-events: none; }
+.chapter-head__label { display: flex; gap: 10px; align-items: center; margin: 0 0 14px; white-space: nowrap; }
+.chapter-head__index { color: var(--accent); }
+.chapter-head__title { margin: 0; font-size: inherit; line-height: 0; }
+.chapter-head__caption { margin: 14px 0 0; color: var(--ink-2); font-size: 15px; max-width: 32ch; }
+
+.voxel-title { width: 100%; }
+.voxel-title canvas { display: block; width: 100%; }
+
+@media (max-aspect-ratio: 5/4), (max-width: 759px) {
+  .chapter-head__caption { display: none; }
+}
+@media (max-width: 759px) {
+  .chapter-head__label { white-space: normal; flex-wrap: wrap; row-gap: 4px; margin-bottom: 10px; }
+}

@@ -1,0 +1,67 @@
+.cursor { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
+
+.cursor__dot,
+.cursor__ring {
+  position: fixed;
+  left: 0;
+  top: 0;
+  translate: -50% -50%;
+  will-change: transform;
+}
+
+.cursor__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.cursor__ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  transition: width 0.45s var(--ease-out), height 0.45s var(--ease-out), border-radius 0.45s var(--ease-out),
+    border-color 0.3s, background-color 0.3s;
+}
+
+.cursor__ring[data-mode='link'] {
+  width: 58px;
+  height: 58px;
+  border-color: var(--accent);
+  background: rgba(143, 181, 255, 0.08);
+}
+
+/* targeting brackets over the figure */
+.cursor__ring[data-mode='target'] {
+  width: 52px;
+  height: 52px;
+  border-radius: 2px;
+  border-color: transparent;
+}
+
+.cursor__corner {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 0 solid var(--accent);
+  opacity: 0;
+  transition: opacity 0.3s, inset 0.45s var(--ease-out);
+}
+.cursor__corner:nth-child(1) { top: 0; left: 0; border-top-width: 1.5px; border-left-width: 1.5px; }
+.cursor__corner:nth-child(2) { top: 0; right: 0; border-top-width: 1.5px; border-right-width: 1.5px; }
+.cursor__corner:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.cursor__corner:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+.cursor__ring[data-mode='target'] .cursor__corner { opacity: 1; }
+
+.cursor__label {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  translate: 0 -50%;
+  white-space: nowrap;
+  font-size: 9px;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);
+}

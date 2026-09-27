@@ -1,0 +1,270 @@
+/* Chapter 03 — Explore. Tiers: wide (≥ 760px, aspect ≥ 5/4) · stacked/mobile. */
+
+.explore { position: relative; } /* height set inline from the mission count */
+
+.explore__stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  background: radial-gradient(ellipse 70% 60% at 42% 48%, #0a0f19 0%, var(--bg) 70%);
+}
+.explore__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.explore__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(6, 8, 12, 0.7) 0%, transparent 32%),
+    linear-gradient(270deg, rgba(6, 8, 12, 0.72) 0%, transparent 40%),
+    linear-gradient(0deg, rgba(6, 8, 12, 0.85) 0%, transparent 26%);
+}
+
+/* ── gate labels (positioned per frame) ──── */
+.gate-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 8px;
+  row-gap: 2px;
+  padding: 6px 10px 7px 8px;
+  border-left: 1.5px solid var(--c);
+  background: linear-gradient(90deg, rgba(10, 14, 21, 0.85), rgba(10, 14, 21, 0.2));
+  text-align: left;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+.gate-label__n { grid-row: span 2; font-family: var(--f-hud); font-size: 9px; color: var(--c); padding-top: 3px; }
+.gate-label__org { font-size: 13px; font-weight: 600; color: var(--ink); }
+.gate-label__period { font-family: var(--f-hud); font-size: 7.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.gate-label:hover .gate-label__org, .gate-label.is-active .gate-label__org { color: var(--c); }
+
+/* ── left: header + mission clock ────────── */
+.explore__left {
+  position: absolute;
+  z-index: 40;
+  left: var(--gutter);
+  top: 104px;
+  width: min(34vw, 460px);
+  pointer-events: none;
+}
+.explore__left .chapter-head { width: min(34vw, 460px); }
+.clock { display: grid; gap: 6px; margin-top: clamp(24px, 5vh, 52px); }
+.clock__label { font-size: 9px; color: var(--ink-3); }
+.clock__value {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: clamp(24px, 2.6vw, 36px);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 24px rgba(110, 150, 255, 0.35);
+}
+.clock__status { font-size: 13px; color: var(--accent); min-height: 1.4em; }
+
+/* ── dossier ─────────────────────────────── */
+.explore__dossier {
+  position: absolute;
+  z-index: 40;
+  right: var(--gutter);
+  top: 104px;
+  width: min(40vw, 540px);
+  max-height: calc(100svh - 104px - 122px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border-radius: var(--radius);
+}
+.dossier {
+  --c: var(--accent);
+  position: relative;
+  padding: 18px 22px 20px;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: dossier-in 0.7s var(--ease-out) both;
+}
+.dossier::before {
+  content: '';
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--c), transparent);
+}
+@keyframes dossier-in {
+  from { opacity: 0; transform: translateY(14px); clip-path: inset(0 0 100% 0 round 18px); }
+  to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 18px); }
+}
+.dossier__head { display: flex; align-items: center; justify-content: space-between; }
+.dossier__kicker { margin: 0; font-size: 9px; color: var(--c); }
+.dossier__live { display: flex; align-items: center; gap: 7px; font-size: 8.5px; color: #7dffb2; }
+.dossier__live i { width: 6px; height: 6px; border-radius: 50%; background: #7dffb2; box-shadow: 0 0 10px #7dffb2; animation: blink 2.4s infinite; }
+.dossier__role { margin: 12px 0 0; font-size: clamp(22px, 2.2vw, 30px); font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); }
+.dossier__org { display: flex; align-items: center; gap: 9px; margin: 8px 0 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.dossier__swatch { width: 8px; height: 8px; border-radius: 2px; background: var(--c); box-shadow: 0 0 10px var(--c); }
+.dossier__period { margin: 6px 0 0; font-family: var(--f-hud); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.dossier__dur { color: var(--ink-2); }
+.dossier__sub { margin: 13px 0 7px; font-size: 8.5px; color: var(--ink-3); }
+.dossier__log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.dossier__log li {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  font-size: 13px;
+  line-height: 1.42;
+  color: var(--ink-2);
+  animation: log-in 0.6s var(--ease-out) var(--d, 0s) both;
+}
+@keyframes log-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+.dossier__n { font-family: var(--f-hud); font-size: 8.5px; color: var(--c); padding-top: 4px; }
+.dossier__stack { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.dossier__stack li { padding: 4px 9px; border-radius: 6px; font-size: 12px; color: var(--ink-2); background: rgba(16, 22, 32, 0.7); border: 1px solid var(--line); }
+
+.plan { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 4px; }
+.plan__item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  row-gap: 2px;
+  padding: 9px 10px 9px 8px;
+  border-radius: 10px;
+  text-align: left;
+  transition: background-color 0.25s;
+}
+.plan__item:hover { background: rgba(143, 181, 255, 0.08); }
+.plan__n { grid-row: span 2; font-family: var(--f-hud); font-size: 9px; color: var(--c); padding-top: 3px; }
+.plan__org { font-size: 14px; font-weight: 600; color: var(--ink); }
+.plan__role { font-size: 12.5px; color: var(--ink-2); }
+
+/* ── timeline ────────────────────────────── */
+.explore__timeline {
+  position: absolute;
+  z-index: 40;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 26px;
+}
+.timeline { --lane-h: 22px; position: relative; }
+.timeline__lanes { position: relative; height: calc(var(--lanes) * var(--lane-h)); }
+.tl-bar {
+  position: absolute;
+  height: 16px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c) 18%, rgba(10, 14, 21, 0.8));
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  text-align: left;
+  transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.tl-bar:hover, .tl-bar.is-active { background: color-mix(in srgb, var(--c) 35%, rgba(10, 14, 21, 0.8)); border-color: var(--c); box-shadow: 0 0 16px color-mix(in srgb, var(--c) 45%, transparent); }
+.tl-bar__label { display: block; padding: 0 7px; font-size: 10.5px; line-height: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.timeline__cursor {
+  position: absolute;
+  top: -8px;
+  bottom: -26px;
+  left: calc(var(--x, 0) * 100%);
+  width: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  pointer-events: none;
+}
+.timeline__cursor i { position: absolute; top: -4px; left: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.timeline__axis { display: flex; margin-top: 6px; border-top: 1px solid var(--line); }
+.tl-tick { flex: 1; position: relative; padding-top: 5px; font-family: var(--f-hud); font-size: 8px; color: var(--ink-3); text-align: center; }
+.tl-tick::before { content: ''; position: absolute; left: 0; top: -4px; width: 1px; height: 4px; background: var(--line-strong); }
+.tl-tick.is-year::before { height: 8px; top: -8px; background: var(--accent); }
+.tl-tick__y { position: absolute; left: 4px; top: -18px; font-size: 8px; color: var(--accent); }
+
+/* ── stacked + mobile ────────────────────── */
+@media (max-aspect-ratio: 5/4), (max-width: 759px) {
+  .explore__vignette { background: linear-gradient(0deg, rgba(6, 8, 12, 0.92) 0%, rgba(6, 8, 12, 0.5) 45%, transparent 62%); }
+  .explore__left { top: 76px; right: var(--gutter); width: auto; }
+  .explore__left .chapter-head { width: min(62vw, 400px); }
+  .clock { margin-top: 12px; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 12px; }
+  .clock__label { grid-column: span 2; }
+  .clock__value { font-size: 20px; }
+  .clock__status { font-size: 12px; }
+  .explore__dossier { top: auto; left: var(--gutter); right: var(--gutter); bottom: 16px; width: auto; max-height: none; height: 34svh; }
+  .dossier { min-height: 100%; padding: 16px 16px 18px; animation-name: dossier-in-m; }
+  @keyframes dossier-in-m { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .explore__timeline { bottom: calc(34svh + 30px); }
+  .timeline { --lane-h: 16px; }
+  .tl-bar { height: 11px; }
+  .tl-bar__label { display: none; }
+  .tl-tick { font-size: 7px; }
+  .gate-label__period { display: none; }
+  .gate-label__org { font-size: 12px; }
+}
+
+/* ── highlights (content: experience[].highlight) — subtle by design ── */
+.org-logo { width: 16px; height: 16px; border-radius: 3px; object-fit: contain; flex: none; }
+.org-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-family: var(--f-hud);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c);
+  border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+  white-space: nowrap;
+}
+.org-tag--lg { font-size: 8px; padding: 2px 8px; }
+.org-tag--live { color: #7dffb2; border-color: rgba(125, 255, 178, 0.45); background: rgba(125, 255, 178, 0.08); }
+.org-tag--live i { width: 5px; height: 5px; border-radius: 50%; background: #7dffb2; box-shadow: 0 0 8px #7dffb2; animation: blink 2.4s infinite; }
+
+.gate-label__org { display: flex; align-items: center; gap: 7px; }
+.gate-label.is-featured { border-left-width: 2px; }
+.plan__org { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+.dossier__org { flex-wrap: wrap; }
+.dossier__logo { width: 26px; height: 26px; border-radius: 5px; object-fit: contain; flex: none; }
+.dossier__note { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-2); }
+/* a quiet personal milestone — a small accent diamond, no extra weight */
+.dossier__milestone { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; font-size: 12.5px; color: var(--ink); }
+.dossier__milestone i { width: 6px; height: 6px; flex: none; rotate: 45deg; background: var(--c); box-shadow: 0 0 8px var(--c); }
+
+/* featured mission: a faint accent wash + brighter edge */
+.dossier.is-featured {
+  border-color: color-mix(in srgb, var(--c) 32%, transparent);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--c) 9%, transparent), transparent 38%);
+}
+.dossier.is-featured::before { height: 2px; }
+/* current leadership: the top edge carries a slow live shimmer */
+.dossier.is-current::before {
+  background: linear-gradient(90deg, transparent, var(--c), transparent) 0 0 / 40% 100% no-repeat, linear-gradient(90deg, var(--c), transparent);
+  animation: live-sweep 3.2s ease-in-out infinite;
+}
+@keyframes live-sweep { 0% { background-position: -40% 0, 0 0; } 100% { background-position: 140% 0, 0 0; } }
+
+.tl-bar.is-featured { height: 18px; margin-top: -1px; border-width: 1.5px; background: color-mix(in srgb, var(--c) 26%, rgba(10, 14, 21, 0.8)); }
+.tl-bar.is-current::after {
+  /* live edge at "now" */
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 2px;
+  background: #7dffb2;
+  box-shadow: 0 0 10px #7dffb2;
+  animation: blink 2.4s infinite;
+}
+
+@media (max-aspect-ratio: 5/4), (max-width: 759px) {
+  .gate-label .org-tag { display: none; }
+  .gate-label .org-logo { width: 14px; height: 14px; }
+  .tl-bar.is-featured { height: 13px; }
+}
