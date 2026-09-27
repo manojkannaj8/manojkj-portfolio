@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties } from 'react'
 import type { Release } from '../../content/profile'
 import { useInView } from '../../lib/useInView'
 import { prefersReducedMotion } from '../../lib/motion'
+import { isOffscreen } from '../../lib/offscreen'
 
 type ResearchRelease = Extract<Release, { layout: 'research' }>
 type Item = ResearchRelease['items'][number]
@@ -61,6 +62,7 @@ function Redacted() {
   useEffect(() => {
     if (prefersReducedMotion()) return
     const id = setInterval(() => {
+      if (isOffscreen(rows.current[0])) return // text mutations off-screen still dirty layout page-wide
       rows.current.forEach((el) => {
         if (!el || Math.random() > 0.35) return
         el.textContent = Array.from({ length: 14 }, () => (Math.random() > 0.72 ? GLYPHS[(Math.random() * GLYPHS.length) | 0] : '█')).join('')

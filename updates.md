@@ -3,7 +3,7 @@
 > Hand this file to a new session to resume. It records what exists, why, and what's next.
 > **Keep it updated at the end of every stage.** Newest log entries at the bottom of the Log section.
 
-_Last updated: 2026-09-27 — Stage 5 (Chapter 04 · Evolve + contact) built from the owner's achievement details; awaiting owner review. The Debug Odyssey image is still to come._
+_Last updated: 2026-09-27 — Mobile optimisation done on branch `mobile-optimisation` (desktop verified pixel-identical to `main`); owner will merge._
 
 ---
 
@@ -30,7 +30,8 @@ _Last updated: 2026-09-27 — Stage 5 (Chapter 04 · Evolve + contact) built fro
 | 3 | Chapter 02 · Build (projects) | ✅ Done — owner: "perfect continue" |
 | 4 | Chapter 03 · Explore (experience & leadership) | ✅ Done — owner: "everything is perfect"; requested highlight tweaks applied |
 | 5 | Chapter 04 · Evolve (achievements + contact finale) | ✅ Built & verified — **awaiting owner feedback**. Pending owner asset: Debug Odyssey image |
-| 6 | Polish: mobile menu, nav backdrop on scroll, global chapter progress rail, SEO/OG image, deploy, real-device pass | ⏳ Next (after owner OKs Evolve) |
+| 6 | Polish: mobile menu, nav backdrop on scroll, global chapter progress rail, SEO/OG image, deploy, real-device pass | ⏳ Deployed to Vercel by owner; remaining polish items still open |
+| 7 | **Mobile optimisation** (branch `mobile-optimisation`) | ✅ Done — audited, fixed, verified; **awaiting owner merge into `main`** |
 
 **Progress:** 5 of 6 stages built. All four chapters and the contact finale exist, so the site is complete end to end, pending polish.
 
@@ -80,6 +81,7 @@ portfolio v1/
       scroll.ts             ← Lenis registry + scrollToY() for programmatic scrolling (App registers the instance)
       dates.ts              ← month-precision CV period parsing ("Jun 2026 – Aug 2026", "… – Present"), formatting, durations
       useInView.ts          ← one-shot in-viewport flag (true immediately under reduced motion)
+      offscreen.ts          ← marks off-screen scopes (data-offscreen) → CSS pauses their animations; isOffscreen() for timers
     webgl/
       gl.ts                 ← tiny WebGL2 helpers (program, texture, render target)
       hero/HeroScene.ts     ← hero renderer + HERO_ART constants (size, ring, focus, cell)
@@ -378,7 +380,90 @@ Render pipeline per frame (`HeroScene.ts`):
 - Reduced motion (all releases visible, stats static).
 - No console errors across a full-page scroll; build, type-check and lint clean (2 known warnings).
 
-## 11. Content (src/content/profile.ts)
+## 11. Mobile optimisation (branch `mobile-optimisation`, 2026-09-27)
+
+**Owner brief:** the desktop is final, so do not change it. On phones, some heavy animations occasionally glitched, got stuck or felt less smooth. Audit everything first, and only lighten what is genuinely heavy, keeping the visual intent.
+
+**Audit method** (scripts lived in the session scratchpad, not the repo; recreate them with `puppeteer-core` if needed):
+- **Emulation:** headless Chrome (real GPU via ANGLE/D3D11), phone emulation (390×844, DPR 3, touch, mobile UA), **4× CPU throttling**.
+- **Frame timing:** per-frame `requestAnimationFrame` deltas per section; Long Animation Frame entries with script attribution.
+- **Profiles:** CPU profiles on an unminified build.
+- **Ablations:** CSS ablation (toggle one visual feature and re-measure).
+- **Entry spikes:** "entry" profiles scrolling into each chapter to catch one-off freezes.
+- **Desktop checks:** pixel diffs at 1440×900 against `main`; phone screenshots side by side with `main`.
+
+**Findings (measured, not assumed):**
+1. **Infinite CSS animations ran everywhere, even off-screen.** Evolve at 32 ms/frame fell to 10 ms with animations off. Off-screen timers (redacted scrambler every 140 ms, hero telemetry, chapter scanner, status cycle) also kept mutating text, which dirtied layout for the whole page.
+2. **Forced synchronous layout:** `VoxelTitle` and `VoxelImage` called `getBoundingClientRect()` every frame after other loops wrote styles. That was 12–21% of CPU in the pinned chapters.
+3. **Build packets:** `getPointAtLength` every frame was ~30% of Build's CPU.
+4. **Glass (backdrop-filter) over constantly redrawing content:** the Explore dossier cost ~13 ms/frame at 4× CPU (Learn ~4 ms, Build ~2 ms). The hero status card showed no measurable cost, so it was left alone.
+5. **Non-composited SVG animations:** Build module glyphs cost ~10 ms of Build's ~25 ms. The Learn planet's inner dash spin repainted its glow-filtered layer (~4 ms). The Evolve seal's text-ring spin with drop-shadow, and the pipeline box-shadow pings, also repainted.
+6. **Learn orbit:** opacity and z-index were rewritten for all 34 nodes every frame even when unchanged, and ring SVG attributes were rewritten every frame.
+7. **One-off freezes:**
+   - ~220 ms (4× CPU) as the SENSORA images entered lazy-load range: canvas prep on the main thread, plus `toLocaleString` rebuilding a formatter every CountUp frame.
+   - My own first-pass path sampling (3px) caused a 160 ms hitch on Build project changes; fixed with 8px sampling.
+8. **Interaction bugs:**
+   - `VoxelTitle` repelled voxels from the last tap position (stale pointer on touch), so titles "glitched" as they scrolled past it.
+   - The mobile bottom sheets (Learn panel, Build inspector, Explore dossier) used `overscroll-behavior: contain`, so swipes on them could not scroll the page: the "stuck" feeling.
+   - The iOS motion-permission prompt fired on the first tap anywhere, including links and buttons.
+
+**Changes. Invisible (all devices, pixel-identical on desktop):**
+- `lib/offscreen.ts` + a rule in `global.css`: chapters, releases and the finale get `data-offscreen` (200px margin), and infinite CSS animations inside are paused. The rule is disabled under reduced motion, where it could freeze a 0.001 ms animation mid-way.
+- **Timers gated by visibility:** hero chapter scanner (also skipped when CSS hides it), status cycle (retries until back on screen), telemetry ticker (skipped when hidden or off-screen), redacted scrambler.
+- **Build packets:** traces are sampled once per layout into point arrays (8px chords, < 0.7px error) and interpolated; no per-frame `getPointAtLength`.
+- **Learn orbit:** skips unchanged node opacity and z-index writes and unchanged ring geometry.
+- `CountUp` uses one cached `Intl.NumberFormat`.
+- `VoxelImage` canvas prep is queued one image per frame.
+
+**Changes. Touch devices only** (`!pointer.hasFinePointer` in JS, `@media (hover: none) and (pointer: coarse)` in CSS):
+- **`VoxelTitle`:**
+  - No per-frame rect read and no stale-pointer repulsion. A **tap** on a title scatters its voxels (spring back as before).
+  - Once assembled and still, it redraws every 4th frame, so the twinkle is kept.
+- **`VoxelImage`:**
+  - No per-frame rect read.
+  - Decode, crop and resize off the main thread via `createImageBitmap(Blob, …, {resizeWidth, resizeHeight, resizeQuality:'high'})`, with a canvas fallback. (From an `<img>` element it runs on the main thread: measured 370 ms.)
+  - Desktop keeps the original canvas path, which stays pixel-identical.
+- **Glass panels over animating content → deep tint** (`rgba(12,17,26,.92)`, no live blur): Explore dossier, Learn skill panel, Build inspector. They look the same on these dark scenes (checked side by side).
+- **Bottom sheets:** `overscroll-behavior: auto`, so swipes chain to the page (fixes "stuck").
+- **Build module glyphs:** stepped timing (`steps(8, jump-none)`; spins `steps(30)`). Same motions in a digital-HUD cadence, with far fewer repaints.
+- **Learn planet inner ring:** `steps(160)` over its 40 s turn.
+- **Evolve seal:** the whole badge spins on the compositor instead of repainting the text ring; the offset drop-shadow becomes a centred, rotation-proof glow.
+- **Evolve pipeline ping:** a pre-drawn glow layer fades via opacity (compositor) instead of animating box-shadow.
+- **Research progress bar:** transform instead of `left`; patch-note glyphs are stepped.
+- **Motion permission (`lib/pointer.ts`):** the iOS prompt is requested only from taps on the scene, never on links or buttons.
+
+**Deliberately not changed:**
+- **Hero visuals:** its cost dropped from the off-screen fixes alone (33 → 9–18 ms at 4× CPU).
+- **Voxel counts, particle densities, parallax strengths:** not the bottleneck.
+- **Stage heights (100svh):** the band below a pinned stage when mobile toolbars collapse fades into the page colour, so it's invisible.
+
+**Results.** A/B on the same machine, back to back, phone emulation at 4× CPU. Figures are average frame ms / % frames > 33 ms:
+
+| Phase | `main` | `mobile-optimisation` |
+|---|---|---|
+| Hero idle | 14.7 / 2.3% | **9.3 / 0.4%** |
+| Scroll Learn | 28.1 / 22.4% | **15.7 / 2.7%** |
+| Scroll Build | 21.5 / 9.3% | **12.4 / 1.9%** |
+| Scroll Explore | 23.8 / 8.2% | **15.2 / 3.3%** |
+| Scroll Evolve | 21.1 / 7.3% | **12.0 / 1.9%** |
+| Idle Build | 26.5 / 16.9% | **12.3 / 1.5%** |
+
+- **Worst single frames:** `main` had 508 / 555 / 268 ms freezes; the branch's worst is ≤ 94 ms.
+- Absolute numbers vary between runs with machine load; the back-to-back A/B is the fair comparison. For reference, the first baseline run (same harness, busier machine) had main at 33–58 ms and 50–60% of frames over 33 ms.
+
+**Verification:**
+- **Desktop 1440×900** (reduced motion to freeze animation state): all 6 checkpoints are **pixel-identical to `main`**.
+- **Phone:** screenshots side by side with `main` look the same in every chapter.
+- **Functional checks on phone emulation:**
+  - the seal compositor spin is running and the inner spin is off;
+  - pipeline `pipe-glow` is running;
+  - the sheets have `overscroll-behavior: auto` and no backdrop blur;
+  - the hero pauses when scrolled away and resumes;
+  - no page errors.
+- **Build:** production build, type-check, lint (2 known warnings).
+- **Not verified on real hardware** (owner to test on their phone after deploying the branch preview): Safari/iOS specifics such as the motion permission flow and `createImageBitmap` resize support (falls back safely).
+
+## 12. Content (src/content/profile.ts)
 
 **Sources:** CV (`Manoj_Kanna_J_CV-1 (1).docx`, Sep 2026) and public GitHub (`github.com/manojkannaj8`). LinkedIn was behind an auth wall, so nothing was taken from it yet.
 
@@ -425,7 +510,7 @@ Render pipeline per frame (`HeroScene.ts`):
 - **Learn skill graph:** it now reads the new achievements. XGBoost → SurgeGuard; Agentic AI → the Agentic AI research project; CatBoost / Machine Learning → "DOP-XML — IEEE conference paper". Research entries show their status in Learn's panel so they don't duplicate project names.
 - **`TODO(linkedin)`:** about/summary; paper title, conference name and year; patent details once the owner can share them.
 
-## 12. Known issues / caveats
+## 13. Known issues / caveats
 
 - Mobile nav links are hidden below 760 px, and there is **no mobile menu yet** (polish stage).
 - The fixed nav has no backdrop, so on phones the logo and CTA sit over scrolling content (e.g. the Evolve cards). A backdrop/blur on scroll is planned for polish.
@@ -444,9 +529,9 @@ Render pipeline per frame (`HeroScene.ts`):
   - With the pane hidden, `requestAnimationFrame` doesn't run, so fps probes time out. Measure only while the pane is visible.
 - Chapter labels wrap on phones (< 760px) instead of overflowing (`ChapterHead.css`).
 
-## 13. Next up
+## 14. Next up
 
-- **Wait for owner feedback on Evolve** (and the Explore stipend line).
+- **Owner:** test the `mobile-optimisation` branch on a phone (Vercel creates a preview deployment per branch), then merge into `main`.
 - **Pending owner inputs:**
   - The Debug Odyssey image.
   - Optionally, final SurgeGuard images.
@@ -538,4 +623,18 @@ Render pipeline per frame (`HeroScene.ts`):
 - Production build served with `vite preview` and loaded: all 5 sections render, WebGL hero active, no console errors on a full scroll, dev helpers (`window.__hero`) stripped. `dist` is 1.6 MB.
 - Initialised git and pushed to https://github.com/manojkannaj8/manojkj-portfolio (`main`). Private screenshot originals are excluded.
 - Still recommended before calling it final (Stage 6): a mobile menu + nav backdrop, OG/share meta image, Lighthouse pass, real-device test.
+
+### 2026-09-27 — Mobile optimisation (branch `mobile-optimisation`)
+- Owner: desktop is final; audit mobile, lighten only what's genuinely heavy, and keep the character. Work was done on the owner-created branch.
+- Built a headless-Chrome audit harness (phone emulation, touch, 4× CPU): frame timing, LoAF attribution, CPU profiles, CSS ablations, entry-spike profiles.
+- Fixed, in order of measured impact:
+  - off-screen animations and timers;
+  - forced layouts;
+  - Build packet geometry queries;
+  - glass-over-canvas on touch;
+  - non-composited SVG/CSS animations on touch;
+  - orbit style churn;
+  - one-off freezes (off-thread image prep, cached number formatter, staggered prep);
+  - touch interaction bugs (stale-pointer title repulsion, bottom-sheet scroll trap, iOS permission prompt on links).
+- Details, the results table and verification are in §11. Desktop pixel-identical to `main`.
 

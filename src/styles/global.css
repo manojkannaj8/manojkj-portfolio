@@ -44,6 +44,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   html.has-cursor, html.has-cursor a, html.has-cursor button { cursor: none; }
 }
 
+/* off-screen scopes (lib/offscreen.ts): pause infinite CSS animations — invisible, saves per-frame style/paint */
+@media (prefers-reduced-motion: no-preference) {
+  [data-offscreen] *, [data-offscreen] *::before, [data-offscreen] *::after { animation-play-state: paused !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }

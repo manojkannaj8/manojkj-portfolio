@@ -80,6 +80,11 @@ export function OrbitSystem({ graph, rings, active, focusCat, onHover, onPick, b
     const pos: Record<string, [number, number]> = {}
     const side: Record<string, string> = {}
     const labelW: Record<string, number> = {}
+    // last written values — unchanged opacity / z-index writes still cost a style pass per node per frame
+    const lastOp: Record<string, string> = {}
+    const lastZ: Record<string, string> = {}
+    // ring geometry only changes while building or tilting — skip identical SVG writes
+    const lastRing: string[] = []
     const s = { tiltX: 0, tiltY: 0, spin: 1, drag: 0, build: reduced ? 1 : 0, t: 0 }
     let target: { x: number; y: number } | null = null
 
@@ -144,17 +149,21 @@ export function OrbitSystem({ graph, rings, active, focusCat, onHover, onPick, b
         const rot = `rotate(${(roll * 180) / Math.PI} ${L.cx} ${L.cy})`
 
         const back = backRings.current[i]
-        if (back) {
-          back.setAttribute('cx', String(L.cx)); back.setAttribute('cy', String(L.cy))
-          back.setAttribute('rx', String(rad)); back.setAttribute('ry', String(ry))
-          back.setAttribute('transform', rot)
-          back.style.opacity = String(rp)
-        }
         const front = frontRings.current[i]
-        if (front) {
-          front.setAttribute('d', `M ${L.cx + rad} ${L.cy} A ${rad} ${ry} 0 0 1 ${L.cx - rad} ${L.cy}`)
-          front.setAttribute('transform', rot)
-          front.style.opacity = String(rp)
+        const key = `${L.cx}|${L.cy}|${rad.toFixed(2)}|${ry.toFixed(2)}|${rot}|${rp.toFixed(3)}`
+        if (lastRing[i] !== key) {
+          lastRing[i] = key
+          if (back) {
+            back.setAttribute('cx', String(L.cx)); back.setAttribute('cy', String(L.cy))
+            back.setAttribute('rx', String(rad)); back.setAttribute('ry', String(ry))
+            back.setAttribute('transform', rot)
+            back.style.opacity = String(rp)
+          }
+          if (front) {
+            front.setAttribute('d', `M ${L.cx + rad} ${L.cy} A ${rad} ${ry} 0 0 1 ${L.cx - rad} ${L.cy}`)
+            front.setAttribute('transform', rot)
+            front.style.opacity = String(rp)
+          }
         }
         const g = glints.current[i]
         if (g) {
@@ -177,8 +186,10 @@ export function OrbitSystem({ graph, rings, active, focusCat, onHover, onPick, b
           const d01 = (depth + 1) / 2
           pos[name] = [x, y]
           node.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${0.78 + 0.22 * d01})`
-          node.style.opacity = String(rp * rp * (0.38 + 0.62 * d01)) // labels arrive late so collapsed rings don't clutter the core
-          node.style.zIndex = depth > 0 ? '30' : '6'
+          const op = (rp * rp * (0.38 + 0.62 * d01)).toFixed(3) // labels arrive late so collapsed rings don't clutter the core
+          if (lastOp[name] !== op) { lastOp[name] = op; node.style.opacity = op }
+          const z = depth > 0 ? '30' : '6'
+          if (lastZ[name] !== z) { lastZ[name] = z; node.style.zIndex = z }
           // label faces outward, unless that would run off the stage
           const lw = labelW[name] || (labelW[name] = (node.lastElementChild as HTMLElement).offsetWidth)
           let sd = ux < 0 ? 'left' : 'right'

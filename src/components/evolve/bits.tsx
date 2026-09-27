@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { prefersReducedMotion } from '../../lib/motion'
 
+const inr = new Intl.NumberFormat('en-IN') // built once: toLocaleString() rebuilds a formatter every frame
+
 /** Counts the first number in a value up from zero once `active` ("₹8,000", "36 hours", "Top 6"). Non-numeric values render as-is. */
 export function CountUp({ value, active }: { value: string; active: boolean }) {
   const el = useRef<HTMLSpanElement>(null)
@@ -17,7 +19,7 @@ export function CountUp({ value, active }: { value: string; active: boolean }) {
     const step = (now: number) => {
       const k = Math.min(1, (now - t0) / 1400)
       const v = Math.round(end * (1 - Math.pow(1 - k, 3)))
-      el.current!.textContent = `${pre}${withCommas ? v.toLocaleString('en-IN') : v}${post}`
+      el.current!.textContent = `${pre}${withCommas ? inr.format(v) : v}${post}`
       if (k < 1) raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step)

@@ -433,3 +433,38 @@
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .finale__footer { flex-direction: column; gap: 6px; }
 }
+
+/* ── touch devices (mobile audit) ────────────────────────────────────────────
+   Same animations, cheaper rendering paths:
+   • seal — spin the whole badge on the compositor instead of repainting its text ring each frame;
+     the offset drop-shadow (which would rotate) becomes a centred glow.
+   • pipeline ping — fade a pre-drawn glow layer (opacity, compositor) instead of animating box-shadow.
+   • progress bar — slide with transform instead of animating `left` (layout every frame).
+   • patch-note glyphs — stepped timing, far fewer SVG repaints. */
+@media (hover: none) and (pointer: coarse) {
+  .seal { filter: none; border-radius: 50%; box-shadow: 0 0 26px rgba(0, 0, 0, 0.6); }
+  .seal__spin { animation: none; }
+  .release.is-in .seal { animation: seal-spin-whole 24s linear infinite; }
+  @keyframes seal-spin-whole { to { transform: rotate(360deg); } }
+
+  .release.is-in .pipe__node { animation: none; }
+  .pipe__node::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(110, 150, 255, 0.4);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .release.is-in .pipe__node::after {
+    animation: pipe-glow 2.8s ease-in-out infinite;
+    animation-delay: calc(1.6s + var(--n) * 0.36s);
+  }
+  @keyframes pipe-glow { 0%, 22%, 100% { opacity: 0; } 8% { opacity: 1; } }
+
+  .doc__progress i { left: 0; animation-name: indeterminate-x; }
+  @keyframes indeterminate-x { from { transform: translateX(-100%); } to { transform: translateX(286%); } }
+
+  .note__glyph * { animation-timing-function: steps(8, jump-none) !important; }
+}

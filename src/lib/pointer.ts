@@ -67,7 +67,9 @@ export function initPointer() {
         pointer.y = y
         pointer.clientX = e.clientX
         pointer.clientY = e.clientY
-        requestTiltPermission()
+        // iOS shows a system dialog for motion access — only ask from taps on the scene itself,
+        // never from a tap on a link or button (the dialog would hijack that tap)
+        if (!(e.target as Element | null)?.closest?.('a, button, input, textarea, [role="button"]')) requestTiltPermission()
       }
       pointer.bursts.push({ x, y, strength: e.pointerType === 'mouse' ? 0.7 : 1 })
     },
