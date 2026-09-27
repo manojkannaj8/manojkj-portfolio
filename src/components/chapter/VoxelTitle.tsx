@@ -39,6 +39,12 @@ export function VoxelTitle({ text, maxSize = 190 }: { text: string; maxSize?: nu
     let target = progress
     let visible = false
     let disposed = false
+    // touch devices have no hover: the pointer position is just "wherever the last tap was", so
+    // continuous repulsion would shove voxels as titles scroll past it. Taps give an impulse instead.
+    const fine = pointer.hasFinePointer
+    let impulse: { x: number; y: number } | null = null
+    let moving = false
+    let frame = 0
 
     const layout = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -91,10 +97,16 @@ export function VoxelTitle({ text, maxSize = 190 }: { text: string; maxSize?: nu
     const draw = (dt: number) => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, cssW, cssH)
-      const rect = cv.getBoundingClientRect()
-      const px = pointer.clientX - rect.left
-      const py = pointer.clientY - rect.top
+      let px = -1e5, py = -1e5
+      if (fine) {
+        const rect = cv.getBoundingClientRect()
+        px = pointer.clientX - rect.left
+        py = pointer.clientY - rect.top
+      }
       const R = Math.max(60, cssH * 0.7)
+      const hit = impulse
+      impulse = null
+      moving = false
       const t = performance.now() / 1000
       const settled: number[] = []
       ctx.fillStyle = 'rgba(143, 181, 255, 0.9)'
@@ -108,6 +120,14 @@ export function VoxelTitle({ text, maxSize = 190 }: { text: string; maxSize?: nu
             v.vx += (dx / d) * f
             v.vy += (dy / d) * f
           }
+          if (hit) {
+            const hx = v.tx + v.ox - hit.x, hy = v.ty + v.oy - hit.y, hd = Math.hypot(hx, hy)
+            if (hd < R * 1.5 && hd > 0.01) {
+              const f = (1 - hd / (R * 1.5)) * 260
+              v.vx += (hx / hd) * f
+              v.vy += (hy / hd) * f
+            }
+          }
           v.vx += -v.ox * 60 * dt
           v.vy += -v.oy * 60 * dt
           const damp = Math.exp(-dt * 9)
@@ -115,6 +135,7 @@ export function VoxelTitle({ text, maxSize = 190 }: { text: string; maxSize?: nu
           v.vy *= damp
           v.ox += v.vx * dt
           v.oy += v.vy * dt
+          if (!moving && Math.abs(v.vx) + Math.abs(v.vy) > 1) moving = true
         }
         const k = Math.min(1, Math.max(0, (progress - v.delay) / 0.4))
         if (k <= 0) continue
@@ -146,8 +167,17 @@ export function VoxelTitle({ text, maxSize = 190 }: { text: string; maxSize?: nu
     const tick = (_t: number, deltaMs: number) => {
       const dt = Math.min(deltaMs / 1000, 1 / 20)
       progress += (target - progress) * (1 - Math.exp(-dt * 5))
+      // touch: once assembled and still, redraw every 4th frame — the twinkle stays, the cost drops
+      if (!fine && !moving && !impulse && Math.abs(target - progress) < 0.001 && frame++ % 4) return
       draw(dt)
     }
+    const onTap = (e: PointerEvent) => {
+      if (fine || reduced || !visible || e.pointerType === 'mouse') return
+      const r = cv.getBoundingClientRect()
+      const x = e.clientX - r.left, y = e.clientY - r.top
+      if (x > -40 && y > -40 && x < r.width + 40 && y < r.height + 40) impulse = { x, y }
+    }
+    window.addEventListener('pointerdown', onTap, { passive: true })
 
     const st = reduced
       ? null
@@ -178,6 +208,7 @@ export function VoxelTitle({ text, maxSize = 190 }: { text: string; maxSize?: nu
       io.disconnect()
       ro.disconnect()
       gsap.ticker.remove(tick)
+      window.removeEventListener('pointerdown', onTap)
     }
   }, [text, maxSize])
 

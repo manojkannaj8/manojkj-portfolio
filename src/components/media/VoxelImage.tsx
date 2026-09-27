@@ -19,6 +19,31 @@ type Props = {
   className?: string
 }
 
+/**
+ * Canvas preparation (decode → cover-fit into an offscreen canvas → voxel grid) is queued one image
+ * per frame: several images entering lazy-load range together otherwise stall a single frame.
+ * They are still ~800px off-screen when this runs, so the stagger is invisible.
+ */
+const blobs = new Map<string, Promise<Blob>>()
+const getBlob = (src: string) => {
+  if (!blobs.has(src)) blobs.set(src, fetch(src).then((r) => r.blob()))
+  return blobs.get(src)!
+}
+
+const prepQueue: (() => void)[] = []
+let prepScheduled = false
+function schedulePrep(job: () => void) {
+  prepQueue.push(job)
+  if (prepScheduled) return
+  prepScheduled = true
+  const run = () => {
+    prepQueue.shift()?.()
+    if (prepQueue.length) requestAnimationFrame(run)
+    else prepScheduled = false
+  }
+  requestAnimationFrame(run)
+}
+
 type Cell = { x: number; y: number; sx: number; sy: number; d: number; ox: number; oy: number; vx: number; vy: number }
 
 const ease = (t: number) => 1 - Math.pow(1 - t, 3)
@@ -52,7 +77,7 @@ export function VoxelImage({ src, alt, crop, focus, cell = 16, className = '' }:
     const img = new Image()
     img.decoding = 'async'
     img.src = src
-    let off: HTMLCanvasElement | null = null
+    let off: HTMLCanvasElement | ImageBitmap | null = null
     let cells: Cell[] = []
     let W = 0, H = 0, dpr = 1
     let p = reduced ? 1 : 0
@@ -77,10 +102,36 @@ export function VoxelImage({ src, alt, crop, focus, cell = 16, className = '' }:
       const vw = W / s, vh = H / s
       const sx = img.naturalWidth * cx + (sw - vw) * fx
       const sy = img.naturalHeight * cy + (sh - vh) * fy
-      off = document.createElement('canvas')
-      off.width = cv.width
-      off.height = cv.height
-      off.getContext('2d')!.drawImage(img, sx, sy, vw, vh, 0, 0, off.width, off.height)
+      const tw = cv.width, th = cv.height
+      const viaCanvas = () => {
+        const c = document.createElement('canvas')
+        c.width = tw
+        c.height = th
+        c.getContext('2d')!.drawImage(img, sx, sy, vw, vh, 0, 0, tw, th)
+        return c
+      }
+      const adopt = (source: HTMLCanvasElement | ImageBitmap) => {
+        if (off && 'close' in off) off.close()
+        off = source
+        buildCells()
+      }
+      // Decode + crop + resize off the main thread: createImageBitmap(Blob) runs on a background thread
+      // (from an <img> it runs on the main thread — measured 370ms at 4× CPU). Same high-quality result;
+      // falls back to the canvas path where resize options aren't supported.
+      // touch devices only: desktop keeps the original canvas resample (pixel-identical to before)
+      if (!pointer.hasFinePointer && typeof createImageBitmap === 'function') {
+        getBlob(src)
+          .then((blob) => createImageBitmap(blob, Math.round(sx), Math.round(sy), Math.round(vw), Math.round(vh), { resizeWidth: tw, resizeHeight: th, resizeQuality: 'high' }))
+          .then((bm) => {
+            if (disposed || cv.width !== tw || cv.height !== th) { bm.close(); return }
+            if (bm.width !== tw || bm.height !== th) { bm.close(); adopt(viaCanvas()); return } // resize options unsupported
+            adopt(bm)
+          })
+          .catch(() => { if (!disposed) adopt(viaCanvas()) })
+      } else adopt(viaCanvas())
+    }
+
+    const buildCells = () => {
       // voxel grid; assembly sweeps diagonally with jitter, voxels fall in from above
       let seed = 3
       const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
@@ -103,8 +154,13 @@ export function VoxelImage({ src, alt, crop, focus, cell = 16, className = '' }:
     const draw = (dt: number) => {
       if (!off) return
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      const rect = cv.getBoundingClientRect()
-      const px = pointer.clientX - rect.left, py = pointer.clientY - rect.top
+      // hover only exists on fine pointers — touch skips the per-frame layout read (taps use `impulse`)
+      let px = -1, py = -1
+      if (pointer.hasFinePointer) {
+        const rect = cv.getBoundingClientRect()
+        px = pointer.clientX - rect.left
+        py = pointer.clientY - rect.top
+      }
       const inside = !reduced && pointer.hasFinePointer && px >= 0 && py >= 0 && px <= W && py <= H
       const R = Math.max(70, Math.min(W, H) * 0.22)
       let moving = false
@@ -222,14 +278,23 @@ export function VoxelImage({ src, alt, crop, focus, cell = 16, className = '' }:
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerdown', onDown)
 
-    img.decode().catch(() => {}).then(() => {
+    // only the natural size is needed here — pixels come from the off-thread bitmap (no main-thread decode)
+    const loaded = new Promise<void>((res) => {
+      if (img.complete && img.naturalWidth) res()
+      else { img.onload = () => res(); img.onerror = () => res() }
+    })
+    loaded.then(() => {
       if (disposed) return
-      layout()
-      ro.observe(el)
+      schedulePrep(() => {
+        if (disposed) return
+        layout()
+        ro.observe(el)
+      })
     })
 
     return () => {
       disposed = true
+      if (off && 'close' in off) off.close()
       sleep()
       st?.kill()
       io.disconnect()

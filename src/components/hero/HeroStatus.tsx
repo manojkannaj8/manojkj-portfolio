@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { profile } from '../../content/profile'
 import { useReducedMotion } from '../../lib/motion'
 import { scramble } from '../../lib/scramble'
+import { isOffscreen } from '../../lib/offscreen'
 
 const CYCLE_MS = 4800
 
@@ -22,18 +23,26 @@ export function HeroStatus() {
   const [i, setI] = useState(0)
   const [paused, setPaused] = useState(false)
   const title = useRef<HTMLSpanElement>(null)
+  const root = useRef<HTMLElement>(null)
   const item = items[i]
 
   useEffect(() => scramble(title.current!, item.title, { duration: 0.7, reduced }), [item, reduced])
 
   useEffect(() => {
     if (reduced || paused) return
-    const t = setTimeout(() => setI((n) => (n + 1) % items.length), CYCLE_MS)
+    // don't cycle (re-render + decode) while the hero is scrolled away; retry until it's back
+    let t = 0
+    const advance = () => {
+      if (isOffscreen(root.current)) { t = window.setTimeout(advance, 1000); return }
+      setI((n) => (n + 1) % items.length)
+    }
+    t = window.setTimeout(advance, CYCLE_MS)
     return () => clearTimeout(t)
   }, [i, paused, reduced, items.length])
 
   return (
     <aside
+      ref={root}
       className="status"
       data-reveal
       aria-label="Current status"

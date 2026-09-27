@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { profile } from '../../content/profile'
 import { useReducedMotion } from '../../lib/motion'
 import { scramble } from '../../lib/scramble'
+import { isOffscreen } from '../../lib/offscreen'
 
 /**
  * The artwork's LEARN / BUILD / EXPLORE / EVOLVE, re-set as live type.
@@ -15,7 +16,11 @@ export function HeroChapters() {
 
   useEffect(() => {
     if (reduced || hover !== null) return
-    const t = setInterval(() => setActive((n) => (n + 1) % profile.chapters.length), 1600)
+    const t = setInterval(() => {
+      if (isOffscreen(document.getElementById('top'))) return // hero scrolled away: skip the scan
+      if (!labels.current[0]?.offsetParent) return // list hidden by CSS (stacked / phone layouts)
+      setActive((n) => (n + 1) % profile.chapters.length)
+    }, 1600)
     return () => clearInterval(t)
   }, [reduced, hover])
 

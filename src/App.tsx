@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
 import { initPointer } from './lib/pointer'
 import { setLenis } from './lib/scroll'
+import { watchAnimationScopes } from './lib/offscreen'
 import { useReducedMotion } from './lib/motion'
 import { Cursor } from './components/chrome/Cursor'
 import { Nav } from './components/chrome/Nav'
@@ -19,6 +20,7 @@ export default function App() {
   const reduced = useReducedMotion()
 
   useEffect(() => { initPointer() }, [])
+  useEffect(() => watchAnimationScopes(), [])
 
   // smooth scroll, synced to GSAP's ticker so WebGL + ScrollTrigger share one clock
   useEffect(() => {

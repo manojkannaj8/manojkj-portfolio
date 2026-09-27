@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { pointer } from '../../lib/pointer'
 import { isTouchDevice, useReducedMotion } from '../../lib/motion'
+import { isOffscreen } from '../../lib/offscreen'
 
 const BARS = 12
 
@@ -17,8 +18,15 @@ export function HeroReadout() {
     let frame = 0
     let level = 0
     const bars = Array.from(meter.current!.children) as HTMLElement[]
+    const root = coords.current!.parentElement!
+    let shown = true
+    const measure = () => { shown = getComputedStyle(root).display !== 'none' }
+    measure()
+    window.addEventListener('resize', measure)
     const tick = () => {
       if (frame++ % 3) return
+      // hidden by CSS (stacked / short layouts) or scrolled away: no text writes, nothing dirtied
+      if (!shown || isOffscreen(root)) return
       const speed = Math.hypot(pointer.vx, pointer.vy)
       level += (Math.min(1, speed / 2.2) - level) * 0.35
       const x = touch ? pointer.tiltX * 0.5 + 0.5 : pointer.x
@@ -28,7 +36,7 @@ export function HeroReadout() {
       bars.forEach((b, i) => b.classList.toggle('is-on', i < Math.max(1, lit)))
     }
     gsap.ticker.add(tick)
-    return () => gsap.ticker.remove(tick)
+    return () => { gsap.ticker.remove(tick); window.removeEventListener('resize', measure) }
   }, [reduced, touch])
 
   return (

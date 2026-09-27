@@ -70,6 +70,8 @@ export function Schematic({ system, inspect, lit, onInspect, reduced, ref }: Pro
   const pathEls = useRef<(SVGPathElement | null)[]>([])
   const packetEls = useRef<(SVGGElement | null)[]>([])
   const lens = useRef<number[]>([])
+  /** each trace sampled once into [x0, y0, x1, y1, …] — packets read these instead of querying SVG geometry every frame */
+  const samples = useRef<Float32Array[]>([])
   const clock = useRef(0)
   const tilt = useRef({ x: 0, y: 0 })
   const inspectRef = useRef(inspect)
@@ -99,6 +101,18 @@ export function Schematic({ system, inspect, lit, onInspect, reduced, ref }: Pro
     cv.getContext('2d')!.setTransform(dpr, 0, 0, dpr, 0, 0)
     lens.current = pathEls.current.map((p) => p?.getTotalLength() ?? 0)
     pathEls.current.forEach((p, i) => { if (p) p.style.strokeDasharray = `${lens.current[i]}` })
+    samples.current = pathEls.current.map((p, i) => {
+      const len = lens.current[i]
+      if (!p || !len) return new Float32Array(4)
+      const n = Math.max(2, Math.ceil(len / 8) + 1) // 8px chords: < 0.7px off even on the 12px corner radius
+      const out = new Float32Array(n * 2)
+      for (let k = 0; k < n; k++) {
+        const pt = p.getPointAtLength((k / (n - 1)) * len)
+        out[k * 2] = pt.x
+        out[k * 2 + 1] = pt.y
+      }
+      return out
+    })
   }, [layout, size])
 
   useImperativeHandle(ref, () => ({
@@ -157,8 +171,11 @@ export function Schematic({ system, inspect, lit, onInspect, reduced, ref }: Pro
           if (reduced || ep < 1) { g.style.opacity = '0'; continue }
           const speed = isHot ? 260 : 110
           const u = ((clock.current * speed) / len + k / PACKETS_PER_EDGE + i * 0.37) % 1
-          const pt = path.getPointAtLength(u * len)
-          g.setAttribute('transform', `translate(${pt.x} ${pt.y})`)
+          const pts = samples.current[i]
+          const f = u * (pts.length / 2 - 1), k0 = Math.floor(f), k1 = Math.min(k0 + 1, pts.length / 2 - 1), w = f - k0
+          const px = pts[k0 * 2] + (pts[k1 * 2] - pts[k0 * 2]) * w
+          const py = pts[k0 * 2 + 1] + (pts[k1 * 2 + 1] - pts[k0 * 2 + 1]) * w
+          g.setAttribute('transform', `translate(${px} ${py})`)
           g.style.opacity = String(Math.sin(u * Math.PI) * (isHot ? 1 : 0.75))
         }
       })

@@ -268,3 +268,12 @@
   .gate-label .org-logo { width: 14px; height: 14px; }
   .tl-bar.is-featured { height: 13px; }
 }
+
+/* ── touch devices (mobile audit) ────────────────────────────────────────────
+   Re-blurring the full-width dossier sheet over a canvas that redraws every frame cost ~13ms/frame
+   at 4× CPU — the single biggest Explore hitch. A deep tint keeps the glass look without it. */
+@media (hover: none) and (pointer: coarse) {
+  .dossier { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: rgba(12, 17, 26, 0.92); }
+  /* bottom sheets sit in the thumb zone: once scrolled to their end, a swipe must reach the page (contain = feels stuck) */
+  .explore__dossier { overscroll-behavior: auto; }
+}
