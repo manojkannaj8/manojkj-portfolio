@@ -532,6 +532,7 @@ Render pipeline per frame (`HeroScene.ts`):
 ## 14. Next up
 
 - **Owner:** test the `mobile-optimisation` branch on a phone (Vercel creates a preview deployment per branch), then merge into `main`.
+- **PR not yet opened** (as of 2026-09-28): the branch is pushed, but the GitHub CLI isn't installed on this machine. Either the owner opens it via https://github.com/manojkannaj8/manojkj-portfolio/compare/main...mobile-optimisation, or install `gh` (`winget install GitHub.cli`) and have the owner run `gh auth login` first.
 - **Pending owner inputs:**
   - The Debug Odyssey image.
   - Optionally, final SurgeGuard images.
