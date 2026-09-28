@@ -3,7 +3,7 @@
 > Hand this file to a new session to resume. It records what exists, why, and what's next.
 > **Keep it updated at the end of every stage.** Newest log entries at the bottom of the Log section.
 
-_Last updated: 2026-09-27 — Mobile optimisation done on branch `mobile-optimisation` (desktop verified pixel-identical to `main`); owner will merge._
+_Last updated: 2026-09-28 — Mobile optimisation merged into `main` (PR #1). The site is complete and deployed; remaining items are in §14 Next up._
 
 ---
 
@@ -31,7 +31,7 @@ _Last updated: 2026-09-27 — Mobile optimisation done on branch `mobile-optimis
 | 4 | Chapter 03 · Explore (experience & leadership) | ✅ Done — owner: "everything is perfect"; requested highlight tweaks applied |
 | 5 | Chapter 04 · Evolve (achievements + contact finale) | ✅ Built & verified — **awaiting owner feedback**. Pending owner asset: Debug Odyssey image |
 | 6 | Polish: mobile menu, nav backdrop on scroll, global chapter progress rail, SEO/OG image, deploy, real-device pass | ⏳ Deployed to Vercel by owner; remaining polish items still open |
-| 7 | **Mobile optimisation** (branch `mobile-optimisation`) | ✅ Done — audited, fixed, verified; **awaiting owner merge into `main`** |
+| 7 | **Mobile optimisation** | ✅ Done — merged into `main` via PR #1 (2026-09-28) |
 
 **Progress:** 5 of 6 stages built. All four chapters and the contact finale exist, so the site is complete end to end, pending polish.
 
@@ -531,7 +531,7 @@ Render pipeline per frame (`HeroScene.ts`):
 
 ## 14. Next up
 
-- **Owner:** test the `mobile-optimisation` branch on a phone (Vercel creates a preview deployment per branch), then merge into `main`.
+- Mobile optimisation is merged (PR #1) and deployed from `main`. Owner to keep an eye on real-phone behaviour (iOS untested).
 - **Pending owner inputs:**
   - The Debug Odyssey image.
   - Optionally, final SurgeGuard images.
@@ -637,4 +637,7 @@ Render pipeline per frame (`HeroScene.ts`):
   - one-off freezes (off-thread image prep, cached number formatter, staggered prep);
   - touch interaction bugs (stale-pointer title repulsion, bottom-sheet scroll trap, iOS permission prompt on links).
 - Details, the results table and verification are in §11. Desktop pixel-identical to `main`.
+
+### 2026-09-28 — Merged
+- Owner merged `mobile-optimisation` into `main` via PR #1. Work continues from `main`.
 
