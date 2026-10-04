@@ -638,3 +638,7 @@ Render pipeline per frame (`HeroScene.ts`):
   - touch interaction bugs (stale-pointer title repulsion, bottom-sheet scroll trap, iOS permission prompt on links).
 - Details, the results table and verification are in §11. Desktop pixel-identical to `main`.
 
+### 2026-10-04 — Daily polish (branch `chore/daily-polish`)
+- Added `public/robots.txt`, Open Graph/Twitter meta tags, and a GitHub Actions CI workflow (build on push/PR).
+- Moved the hero→cursor figure probe into `src/lib/figureProbe.ts`, which clears a fast-refresh lint warning. No visual change.
+- README now documents `npm run lint`. Remaining lint warning: `Hero.tsx` set-state-in-effect (hero is locked, so left alone).
