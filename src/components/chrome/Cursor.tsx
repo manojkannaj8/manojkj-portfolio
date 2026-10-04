@@ -2,12 +2,8 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { pointer } from '../../lib/pointer'
 import { useReducedMotion } from '../../lib/motion'
+import { hitsFigure } from '../../lib/figureProbe'
 import './Cursor.css'
-
-type Probe = (x: number, y: number) => boolean
-let figureProbe: Probe | null = null
-/** The hero registers a hit-test so the cursor can become a reticle over the figure. */
-export const setFigureProbe = (p: Probe | null) => { figureProbe = p }
 
 /**
  * Two-part cursor: a precise dot plus a lagging HUD reticle.
@@ -49,7 +45,7 @@ export function Cursor() {
       dx(pointer.clientX); dy(pointer.clientY)
       rx(pointer.clientX); ry(pointer.clientY)
       if (hoverEl) setMode('link', hoverEl.getAttribute('data-cursor') ?? '')
-      else if (figureProbe?.(pointer.clientX, pointer.clientY)) setMode('target', 'Decompile')
+      else if (hitsFigure(pointer.clientX, pointer.clientY)) setMode('target', 'Decompile')
       else setMode('idle')
     }
 
