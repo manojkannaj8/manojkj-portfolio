@@ -1,0 +1,11 @@
+{
+  "name": "Manoj Kanna J",
+  "short_name": "Manoj Kanna J",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#06080c",
+  "theme_color": "#06080c",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
