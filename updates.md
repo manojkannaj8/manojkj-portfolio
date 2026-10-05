@@ -645,3 +645,8 @@ Render pipeline per frame (`HeroScene.ts`):
 - Added `public/robots.txt`, Open Graph/Twitter meta tags, and a GitHub Actions CI workflow (build on push/PR).
 - Moved the hero→cursor figure probe into `src/lib/figureProbe.ts`, which clears a fast-refresh lint warning. No visual change.
 - README now documents `npm run lint`. Remaining lint warning: `Hero.tsx` set-state-in-effect (hero is locked, so left alone).
+
+### 2026-10-05 — Daily polish (branch `chore/daily-2026-10-05`)
+- CI now runs `oxlint src` before the build and cancels superseded runs.
+- Added a Dependabot config (monthly, grouped minor/patch updates, max 3 open PRs).
+- Added `manifest.webmanifest`, a `color-scheme: dark` meta tag and a `<noscript>` fallback message in `index.html`. No content or visual change.
