@@ -650,3 +650,8 @@ Render pipeline per frame (`HeroScene.ts`):
 - CI now runs `oxlint src` before the build and cancels superseded runs.
 - Added a Dependabot config (monthly, grouped minor/patch updates, max 3 open PRs).
 - Added `manifest.webmanifest`, a `color-scheme: dark` meta tag and a `<noscript>` fallback message in `index.html`. No content or visual change.
+
+### 2026-10-06 — Daily polish (branch `chore/daily-2026-10-06`)
+- The skip-to-content link is now visible when it receives keyboard focus (it was permanently clipped).
+- Added `.editorconfig` and an `npm run typecheck` script (documented in the README).
+- Dependabot PRs #6–#10 are open for the owner to review.
