@@ -6,7 +6,8 @@ An interactive world built around the hero artwork. Vite + React + TypeScript, r
 npm install
 npm run dev      # http://localhost:5173
 npm run build
-npm run lint     # oxlint
+npm run lint      # oxlint
+npm run typecheck # tsc -b
 ```
 
 ## Editing content
