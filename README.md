@@ -6,7 +6,9 @@ An interactive world built around the hero artwork. Vite + React + TypeScript, r
 npm install
 npm run dev      # http://localhost:5173
 npm run build
-npm run lint     # oxlint
+npm run lint      # oxlint
+npm run typecheck # tsc -b
+npm test          # node:test unit tests (needs Node 22.18+)
 ```
 
 ## Editing content
@@ -46,6 +48,7 @@ src/
 public/hero/                runtime assets (clean plate + depth map)
 art/                        original artwork (not deployed)
 tools/                      asset pipeline scripts
+tests/                      unit tests for src/lib helpers (run by Node's built-in test runner)
 ```
 
 ## Hero asset pipeline

@@ -39,9 +39,11 @@ export function Finale() {
             {email}
             <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M4 12l8-8M5 4h7v7" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
           </a>
-          <button className="finale__copy-btn" onClick={copy} data-cursor="Copy" aria-live="polite">
+          <button type="button" className="finale__copy-btn" onClick={copy} data-cursor="Copy" aria-label="Copy email address">
             {copied ? 'Copied' : 'Copy'}
           </button>
+          {/* a button's own label change isn't announced reliably; a status region is */}
+          <span className="sr-only" role="status">{copied ? 'Email address copied' : ''}</span>
         </div>
 
         <ul className="finale__links rv" style={{ '--i': 3 } as CSSProperties}>
