@@ -655,3 +655,7 @@ Render pipeline per frame (`HeroScene.ts`):
 - The skip-to-content link is now visible when it receives keyboard focus (it was permanently clipped).
 - Added `.editorconfig` and an `npm run typecheck` script (documented in the README).
 - Dependabot PRs #6–#10 are open for the owner to review.
+
+### 2026-10-10 — Daily polish (same PR #11, branch `chore/daily-2026-10-06`)
+- a11y: the decorative finale portrait is now `aria-hidden` (it was an unnamed `role="img"`); the email "Copy" confirmation is announced through a `role="status"` region.
+- Added unit tests for `src/lib/dates.ts` (`npm test`, Node's built-in runner, no new dependencies; needs Node 22.18+) and CI now runs them.
