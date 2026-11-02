@@ -1,6 +1,6 @@
 .hero {
   position: relative;
-  height: 175svh; /* 100 for the scene + 75 of scroll-driven dispersal */
+  height: 210svh; /* 100 for the scene + 110 of scroll: the wink, a hold on it, then the dispersal */
 }
 
 .hero__stage {

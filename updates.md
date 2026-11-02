@@ -3,7 +3,7 @@
 > Hand this file to a new session to resume. It records what exists, why, and what's next.
 > **Keep it updated at the end of every stage.** Newest log entries at the bottom of the Log section.
 
-_Last updated: 2026-09-28 — Mobile optimisation merged into `main` (PR #1). The site is complete and deployed; remaining items are in §14 Next up._
+_Last updated: 2026-11-02 — Hero portrait + scroll wink built on branch `feat/hero-portrait-wink` (uncommitted, **awaiting owner approval**). The site is complete and deployed; remaining items are in §14 Next up._
 
 ---
 
@@ -25,7 +25,7 @@ _Last updated: 2026-09-28 — Mobile optimisation merged into `main` (PR #1). Th
 
 | Stage | Section | Status |
 |---|---|---|
-| 1 | Hero (WebGL) | ✅ Done — **approved by owner, locked: do not change visuals/interactions unless asked** |
+| 1 | Hero (WebGL) | ✅ Done — **locked unless asked**. 2026-11-02: owner asked for their portrait + scroll wink → built on `feat/hero-portrait-wink`, awaiting approval |
 | 2 | Chapter 01 · Learn (education + skills) | ✅ Done — owner: "perfect, continue" |
 | 3 | Chapter 02 · Build (projects) | ✅ Done — owner: "perfect continue" |
 | 4 | Chapter 03 · Explore (experience & leadership) | ✅ Done — owner: "everything is perfect"; requested highlight tweaks applied |
@@ -650,3 +650,30 @@ Render pipeline per frame (`HeroScene.ts`):
 - CI now runs `oxlint src` before the build and cancels superseded runs.
 - Added a Dependabot config (monthly, grouped minor/patch updates, max 3 open PRs).
 - Added `manifest.webmanifest`, a `color-scheme: dark` meta tag and a `<noscript>` fallback message in `index.html`. No content or visual change.
+
+### 2026-10-06 — Daily polish (branch `chore/daily-2026-10-06`)
+- The skip-to-content link is now visible when it receives keyboard focus (it was permanently clipped).
+- Added `.editorconfig` and an `npm run typecheck` script (documented in the README).
+- Dependabot PRs #6–#10 are open for the owner to review.
+
+### 2026-10-10 — Daily polish (same PR #11, branch `chore/daily-2026-10-06`)
+- a11y: the decorative finale portrait is now `aria-hidden` (it was an unnamed `role="img"`); the email "Copy" confirmation is announced through a `role="status"` region.
+- Added unit tests for `src/lib/dates.ts` (`npm test`, Node's built-in runner, no new dependencies; needs Node 22.18+) and CI now runs them.
+
+### 2026-11-02 — Hero portrait + scroll wink (branch `feat/hero-portrait-wink`, not committed yet)
+- **Owner brief:** replace only the hero's visor character (and its halo ring / orbit structure) with their own portrait. Keep the backdrop, wordmark, HUD, copy, cards, interactions and every other section unchanged. Scrolling should turn the normal portrait into a wink. Must look photographed, not AI-made.
+- **Assets** (`tools/portrait_plate.py`, originals in `art/portrait-normal.webp` + `art/portrait-wink.webp`):
+  - Backdrop = the existing `hero-plate.webp` with the old figure, halo ring (+ glow) and orbit ellipse painted out by diffusion fill + grain. The earth panel, crosses, brackets, stripes and pillars are kept; a faint cool backlight sits where the photo's light came from.
+  - Portrait matted with SAM (box + points) → ViTMatte (keeps hair strands); edges decontaminated of the photo's bright blue slab. Scaled 1.2× so the eyes land on the old visor focus.
+  - Grade is deliberately light: −22% saturation on the blue rim light only, skin untouched, fine luminance grain. No face retouching or regeneration.
+  - The two photos differ by 5–7 px around the face (regenerated), so only the winking eye is swapped: a 178×183 RGBA patch, warped onto the normal photo with measured shifts and feathered. The rest of the face never changes, so nothing ghosts.
+  - New depth map from Depth-Anything with the background pinned to 0.05. Hero assets total ≈175 KB (was ≈239 KB).
+- **Scene** (`HeroScene.ts`, `shaders.ts`): new `HERO_PORTRAIT` constants; `HERO_ART` now only describes the old artwork that the contact finale still uses (finale untouched). Removed the orbit-ring light and glint. The `winked()` shader helper is shared by the scene and voxel passes: an upper-lid edge with a faint lash shadow sweeps down over the eye while brow and cheek crossfade.
+  - The wink plays over hero scroll 0.03 → 0.16, smoothed in the ticker, then **holds** until 0.47, when the existing voxel dispersal starts (0.47 → 1). Owner review: the first version (wink 0.03 → 0.22, dispersal straight after) went by too fast, so the hero section grew from 175svh to 210svh. The extra 35svh is the hold; the dispersal covers the same scroll distance as before (≈58svh). The zoom and copy fade are unchanged in code, but the copy now fades over a slightly longer scroll because the section is taller.
+  - **Second owner review:** two changes.
+    - The voxel transformation now **climbs from the jacket to the top of the head** (`riseOf()` in the shaders; it was head-first). A thin blue scan edge leads it, with the voxel grid surfacing just below.  
+    - The wink is **paced in time**: it never plays faster than 0.7 s, however fast the page is scrolled. The break-up (`state.disperse`, eased) waits until the wink has fully landed. On the way back up, the eye stays shut until the figure has reassembled.
+  - Idle edge erosion skips a face ellipse (it was eating the cheek, which now borders the background). Cursor disruption, tap pulse, relight, intro and probe all work as before.
+  - Reduced motion: no dispersal or zoom; the wink follows scroll directly and redraws on demand.
+- **Verified:** 1528×697, 1440×800, 768×1024, 375×812 and reduced motion, with in-between wink frames checked at full resolution offline. Build, typecheck and tests pass; lint shows only the 2 known warnings; no console errors. **Not done:** real-device check and a pixel diff of the other sections (their code is untouched).
+- **Caveats:** the photos are about 1137×955 px of real image, so on large hi-DPI screens the face is upscaled ~1.5–1.8× and reads slightly soft. A higher-resolution or real camera photo would fix that; CSS/shader effects cannot. The finale still shows the old visor figure.

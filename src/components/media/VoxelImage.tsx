@@ -305,7 +305,13 @@ export function VoxelImage({ src, alt, crop, focus, cell = 16, className = '' }:
   }, [near, src, cropKey, focusKey, cell])
 
   return (
-    <div ref={wrap} className={`voxel-image ${className}`} role="img" aria-label={alt} data-cursor="Decompile">
+    // an empty alt marks the image as decorative: hide it rather than expose an unnamed role="img"
+    <div
+      ref={wrap}
+      className={`voxel-image ${className}`}
+      {...(alt ? { role: 'img', 'aria-label': alt } : { 'aria-hidden': true })}
+      data-cursor="Decompile"
+    >
       <canvas ref={canvas} aria-hidden="true" />
     </div>
   )
