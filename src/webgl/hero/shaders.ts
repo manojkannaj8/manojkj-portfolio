@@ -3,8 +3,8 @@
  *
  * Passes per frame:
  *  1. trail   — ping-pong buffer of cursor energy + flow direction (screen space, y-up)
- *  2. scene   — full-screen composite: extended backplate, orbit-ring light,
- *               smeared wordmark, depth-parallaxed figure, cursor relight,
+ *  2. scene   — full-screen composite: extended backplate, smeared wordmark,
+ *               depth-parallaxed portrait (with the scroll wink), cursor relight,
  *               and the "machine interior" revealed wherever voxels broke away
  *  3. voxels  — one GL point per figure cell; detached cells fly out and reassemble
  *
@@ -76,8 +76,13 @@ uniform float uCell;      // voxel size in source image px
 uniform vec2 uTilt;       // parallax driver, -1..1
 uniform float uTime;
 uniform float uIntro;     // 0 = scattered, 1 = assembled
-uniform float uScroll;    // 0 = intact, 1 = dispersed by scroll
+uniform float uScroll;    // 0 = intact, 1 = dispersed by scroll (starts once the wink has landed)
 uniform float uIdle;      // idle silhouette erosion on/off
+uniform sampler2D uWink;  // winking-eye patch; alpha = where it may replace the portrait
+uniform vec4 uWinkRect;   // patch rect in image uv (x, y, w, h)
+uniform vec4 uLid;        // eyelid sweep in image uv: open-lid y, closed-lash y, eye x0, x1
+uniform float uWinkAmt;   // 0 = normal expression, 1 = winking
+uniform vec4 uFace;       // face ellipse in image uv (centre, radii): idle erosion leaves it alone
 
 const vec3 BLUE = vec3(0.42, 0.62, 1.0);
 
@@ -97,6 +102,29 @@ float maskOf(float d) { return smoothstep(0.14, 0.22, d); }
 vec2 parallax(float d) { return uTilt * (d - 0.3) * vec2(0.026, 0.02); }
 vec2 imgToScreen(vec2 iuv) { return (uRect.xy + iuv * uRect.zw) / uRes; }
 vec4 trailAt(vec2 suv) { return texture(uTrail, vec2(suv.x, 1.0 - suv.y)); }
+// 0 at the jacket's lower edge, 1 at the crown: the order the scroll transformation climbs in
+float riseOf(float y) { return clamp((0.96 - y) / 0.92, 0.0, 1.0); }
+
+// The wink: an upper-lid edge sweeps down over the eye while brow and cheek ease across.
+// Both photos are aligned in the asset, so this only decides how much of the patch shows.
+vec3 winked(vec2 uv, vec3 base, float lod) {
+  if (uWinkAmt <= 0.0) return base;
+  vec2 p = (uv - uWinkRect.xy) / uWinkRect.zw;
+  if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) return base;
+  vec4 wk = textureLod(uWink, p, lod);
+  float w = uWinkAmt;
+  float ex = (uv.x - uLid.z) / (uLid.w - uLid.z);
+  float arc = (ex - 0.45) * (ex - 0.45) * 4.0;           // lids curve down toward the corners
+  float lineY = mix(uLid.x + arc * 0.012, uLid.y + arc * 0.003, w * w * (3.0 - 2.0 * w));
+  float lid = smoothstep(lineY + 0.004, lineY - 0.004, uv.y) * smoothstep(0.0, 0.12, w);
+  float eye = (1.0 - smoothstep(0.85, 1.15, abs(ex - 0.5) * 2.0))
+            * smoothstep(uLid.x - 0.03, uLid.x - 0.01, uv.y) * (1.0 - smoothstep(uLid.y + 0.006, uLid.y + 0.02, uv.y));
+  float amt = mix(smoothstep(0.1, 0.9, w), max(lid, smoothstep(0.75, 1.0, w)), eye) * wk.a;
+  vec3 col = mix(base, wk.rgb, amt);
+  // the sweeping edge carries a faint lash shadow, gone once the lid has landed
+  float lash = exp(-pow((uv.y - lineY) / 0.0028, 2.0)) * eye * smoothstep(0.0, 0.15, w) * (1.0 - smoothstep(0.8, 1.0, w));
+  return col * (1.0 - 0.35 * lash * wk.a);
+}
 
 // 0 = cell intact on the figure, 1 = fully broken away
 float detachOf(vec2 cell, vec2 cc, float d, float m, out vec2 flow) {
@@ -107,11 +135,12 @@ float detachOf(vec2 cell, vec2 cc, float d, float m, out vec2 flow) {
   // intro: voxels land top → bottom with jitter
   float s0 = h * 0.45 + cc.y * 0.35;
   D = max(D, 1.0 - smoothstep(s0, s0 + 0.2, uIntro));
-  // scroll: the head lifts away first
-  float s1 = h * 0.35 + cc.y * 0.45;
+  // scroll: the transformation climbs from the jacket to the top of the head
+  float s1 = h * 0.25 + riseOf(cc.y) * 0.55;
   D = max(D, smoothstep(s1, s1 + 0.25, uScroll));
   // idle: slow erosion along right-facing silhouette edges
   float edge = m * (1.0 - maskOf(depthAt(cc + vec2(0.035, -0.012))));
+  edge *= smoothstep(0.8, 1.15, length((cc - uFace.xy) / uFace.zw));
   float n = noise(cc * 9.0 + vec2(uTime * 0.12, -uTime * 0.07));
   D = max(D, uIdle * edge * smoothstep(0.5, 0.85, n));
   float inside = step(0.0, cc.x) * step(cc.x, 1.0) * step(0.0, cc.y) * step(cc.y, 1.0);
@@ -128,7 +157,6 @@ uniform vec2 uVel;        // smoothed pointer velocity (screen uv / s)
 uniform vec2 uLightPos;   // light position, screen uv y-down
 uniform float uLight;     // cursor light amount
 uniform float uWordIn;    // wordmark reveal
-uniform vec3 uRing;       // orbit ring: centre (image px) + radius
 out vec4 fragColor;
 
 vec3 plate(vec2 uv) {
@@ -162,15 +190,6 @@ void main() {
   vec2 buv = uv + tv * tr * 0.012;
   vec3 bg = plate(buv);
 
-  // orbit ring: a highlight that turns to face the light, plus a slow orbiting glint
-  vec2 rc = buv * uImgSize - uRing.xy;
-  float ring = exp(-pow((length(rc) - uRing.z) / 6.0, 2.0));
-  float ang = atan(rc.y, rc.x);
-  vec2 lImg = ((uLightPos * uRes - uRect.xy) / uRect.zw) * uImgSize - uRing.xy;
-  float facing = pow(max(cos(ang - atan(lImg.y, lImg.x)), 0.0), 10.0) * uLight;
-  float orbit = pow(max(cos(ang - uTime * 0.45), 0.0), 60.0);
-  bg += BLUE * ring * (facing * 0.85 + orbit * 0.55) * uIntro;
-
   // ── wordmark: sits between backplate and figure ────────────
   vec2 wuv = (suv - uWordRect.xy) / uWordRect.zw;
   wuv -= uTilt * vec2(0.01, 0.03);
@@ -198,7 +217,8 @@ void main() {
   vec2 flow;
   float hollow = step(0.01, detachOf(cell, cc, dc, maskOf(dc), flow));
 
-  vec3 fig = texture(uImg, clamp(uv + tv * tr * 0.003, 0.0, 1.0)).rgb;
+  vec2 fuv = clamp(uv + tv * tr * 0.003, 0.0, 1.0);
+  vec3 fig = winked(fuv, texture(uImg, fuv).rgb, 0.0);
 
   // cursor relight using normals reconstructed from the depth map
   float e = 2.5 / 683.0;
@@ -218,6 +238,11 @@ void main() {
   float pulse = 0.6 + 0.4 * sin(d * 40.0 - uTime * 3.0);
   vec3 interior = vec3(0.01, 0.016, 0.03) + BLUE * (contour * 0.55 * pulse + lattice * 0.1);
   fig = mix(fig, interior, hollow);
+
+  // the transformation front: a scan edge climbing ahead of the break-up, the voxel grid surfacing just below it
+  float ahead = riseOf(uv.y) - uScroll / 0.55 - (noise(vec2(uv.x * 18.0, uTime * 0.6)) - 0.5) * 0.04;
+  float band = step(-0.01, ahead) * (1.0 - smoothstep(0.0, 0.07, ahead));
+  fig += BLUE * (exp(-pow(ahead / 0.008, 2.0)) * 0.6 + band * lattice * 0.35) * step(0.0005, uScroll) * (1.0 - hollow);
 
   vec3 col = mix(bg, fig, m);
 
@@ -260,7 +285,7 @@ void main() {
 
   gl_Position = vec4(pos.x * 2.0 - 1.0, 1.0 - pos.y * 2.0, 0.0, 1.0);
   gl_PointSize = uCell * uRect.z / uImgSize.x * mix(1.0, 0.4 + h2 * 0.5, p);
-  vCol = textureLod(uImg, cc, 2.0).rgb;
+  vCol = winked(cc, textureLod(uImg, cc, 2.0).rgb, 2.0);
   vP = p;
   vA = 1.0 - smoothstep(0.5, 1.0, p) * 0.9;
 }`

@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { profile } from '../../content/profile'
 import { isTouchDevice, useReducedMotion } from '../../lib/motion'
 import { scramble } from '../../lib/scramble'
-import { HeroScene, HERO_ART } from '../../webgl/hero/HeroScene'
+import { HeroScene, HERO_PORTRAIT } from '../../webgl/hero/HeroScene'
 import { setFigureProbe } from '../../lib/figureProbe'
 import { HeroStatus } from './HeroStatus'
 import { HeroReadout } from './HeroReadout'
@@ -95,7 +95,7 @@ export function Hero() {
     <section ref={section} id="top" className={`hero${revealed ? ' is-revealed' : ''}`} aria-label="Introduction">
       <div className="hero__stage">
         {fallback ? (
-          <img className="hero__fallback" src={HERO_ART.src} alt="" width={HERO_ART.width} height={HERO_ART.height} />
+          <img className="hero__fallback" src={HERO_PORTRAIT.src} alt="" width={HERO_PORTRAIT.width} height={HERO_PORTRAIT.height} />
         ) : (
           <canvas ref={canvas} className="hero__canvas" aria-hidden="true" />
         )}
