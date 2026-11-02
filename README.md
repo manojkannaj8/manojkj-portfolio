@@ -45,15 +45,25 @@ src/
     hero/shaders.ts         GLSL for all hero passes
   lib/                      shared pointer store, reduced-motion hook, text scramble
   styles/                   tokens + globals
-public/hero/                runtime assets (clean plate + depth map)
+public/hero/                runtime assets (portrait plate + wink patch + depth; the old clean plate feeds the finale)
 art/                        original artwork (not deployed)
 tools/                      asset pipeline scripts
 tests/                      unit tests for src/lib helpers (run by Node's built-in test runner)
 ```
 
+## Hero portrait
+
+The hero shows the owner's photo (`art/portrait-normal.webp`) set into the original backdrop, and a scroll-driven wink from `art/portrait-wink.webp`. Rebuild the three runtime files with:
+
+```bash
+python tools/portrait_plate.py
+```
+
+It paints the old visor figure, halo ring and orbit lines out of `hero-plate.webp`, mattes the photo (SAM + ViTMatte), composites it, cuts an aligned wink patch around the eye and makes a depth map (Depth-Anything). Copy the numbers it prints into `HERO_PORTRAIT` in `HeroScene.ts`. Needs `torch`, `transformers`, `scipy`, `Pillow`.
+
 ## Hero asset pipeline
 
-If the hero image changes, regenerate both assets and update `HERO_ART` in `HeroScene.ts` (size, ring, focus):
+The original visor artwork (still used by the contact finale, and as the backdrop source above). If it changes, regenerate both assets:
 
 ```bash
 python tools/make_depth.py art/hero-original.webp public/hero
